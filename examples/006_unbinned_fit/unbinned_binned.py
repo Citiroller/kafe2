@@ -1,25 +1,75 @@
+#!/usr/bin/env python3
+"""
+This example wants to illustrate when unbinned fits are used and when histogram fits are used
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from scipy.stats import norm
 
-from kafe2 import UnbinnedContainer, UnbinnedFit, UnbinnedPlotContainer
-from kafe2 import HistContainer, HistFit, HistPlotContainer, HistPlot
+from kafe2 import UnbinnedFit, UnbinnedPlotContainer
+from kafe2 import HistContainer, HistFit, HistPlotContainer
 from kafe2.fit.util.function_library import normal_distribution_pdf
 
 
-data = np.random.standard_normal(1000)
+def pdf(x, mu=0, sigma=1):
+    return norm(mu, sigma).pdf(x)
 
-u_data = UnbinnedContainer(data[:100])
-h_data = HistContainer(n_bins=100, bin_range=(-3, 3), fill_data=data)
-u_fit = UnbinnedFit(u_data)
-h_fit = HistFit(h_data)
-h_fit.do_fit()
-pc = UnbinnedPlotContainer(u_fit)
-plot = HistPlot(h_fit)
-plot.show_fit_info_box()
-plot.plot()
+
+def cdf(x, mu=0, sigma=1):
+    return norm(mu, sigma).cdf(x)
+
+
+size = 100000
+start = 4
+step = 100
+np.random.seed(1009131719)
+sample = np.random.standard_normal(size+1)
+
+# get parameters from fits
+u_fit = UnbinnedFit(sample, model_density_function=pdf, minimizer='scipy')
+h_data = []
+bins = [10, 50, 100]
+for i in bins:
+    data = HistContainer(n_bins=i, bin_range=(-3, 5), fill_data=sample[0:10])
+    h_data.append(data)
+h_fits = []
+for data in h_data:
+    fit = HistFit(data, model_density_function=pdf, model_density_antiderivative=cdf, minimizer='scipy')
+    h_fits.append(fit)
+
+param_results = []
+n_points = np.logspace(0.5, 5, num=step, dtype=int)
+#n_points = range(start-1, size, step)
+for i in n_points:
+    u_fit.data = sample[0:i]
+    u_fit.do_fit()
+    params = [u_fit.parameter_values]
+    for data, fit, n in zip(h_data, h_fits, bins):
+        data = HistContainer(n_bins=n, bin_range=(-3, 3), fill_data=sample[0:i])
+        fit.data = data
+        fit.do_fit()
+        params.append(fit.parameter_values)
+    param_results.append(params)
+
+param_results = np.array(param_results)
+
+plt.xscale('log')
+plt.scatter(n_points, param_results[:, 0, 0], label=r'$\mu$ Unbinned')
+plt.scatter(n_points, param_results[:, 1, 0], label=r'$\mu$ Binned 10')
+plt.scatter(n_points, param_results[:, 2, 0], label=r'$\mu$ Binned 50')
+plt.scatter(n_points, param_results[:, 3, 0], label=r'$\mu$ Binned 100')
+plt.legend()
 plt.show()
 
+"""
+improvements:
+scale: (ref-estimate)/error
+dashed line around ref, 0 if scaled
+parallelize fits
+save fit results, load when plotting
+check if empty bins have an influence on result: n_bins -> inf likelihood?
+"""
 
 '''
 fig = p.figure
