@@ -21,7 +21,7 @@ def pdf(x, tau=2.0, fbg=0.1, a=1.5, b=20):
 # data_tau = data_tau[data_tau > 1.5]  # 316840 events left, already saved to tau_lande.dat
 data = np.loadtxt('tau_lande.dat', delimiter=',')
 data_limits = np.min(data), np.max(data)
-data_short = data[0:20]
+data_short = data[0:50]
 data_short_limits = np.min(data_short), np.max(data_short)
 
 fit = UnbinnedFit(data=data_short, model_density_function=pdf)
@@ -39,7 +39,7 @@ plot.show_fit_info_box()
 plot.plot()
 plt.show()
 
-"""
+
 hist_data = HistContainer(100, (1.5, 19), fill_data=data)
 hist_fit = HistFit(hist_data, model_density_function=pdf)
 hist_fit.fix_parameter('a', data_limits[0])
@@ -55,4 +55,4 @@ hist_plot = HistPlot(hist_fit)
 hist_plot.show_fit_info_box()
 hist_plot.plot()
 plt.show()
-"""
+

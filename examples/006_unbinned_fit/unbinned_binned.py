@@ -11,6 +11,9 @@ from kafe2 import UnbinnedFit, UnbinnedPlotContainer
 from kafe2 import HistContainer, HistFit, HistPlotContainer
 from kafe2.fit.util.function_library import normal_distribution_pdf
 
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+
 
 def pdf(x, mu=0, sigma=1):
     return norm(mu, sigma).pdf(x)
@@ -39,29 +42,47 @@ for data in h_data:
     h_fits.append(fit)
 
 param_results = []
+error_results = []
 n_points = np.logspace(0.5, 5, num=step, dtype=int)
 #n_points = range(start-1, size, step)
-for i in n_points:
+for j, i in enumerate(n_points):
+    print("Run {} of {}".format(j, len(n_points)))
     u_fit.data = sample[0:i]
     u_fit.do_fit()
     params = [u_fit.parameter_values]
+    errors = [u_fit.parameter_errors]
     for data, fit, n in zip(h_data, h_fits, bins):
         data = HistContainer(n_bins=n, bin_range=(-3, 3), fill_data=sample[0:i])
         fit.data = data
         fit.do_fit()
         params.append(fit.parameter_values)
+        errors.append(fit.parameter_errors)
     param_results.append(params)
-
+    error_results.append(errors)
 param_results = np.array(param_results)
+error_results = np.array(error_results)
+results = [n_points]
+for i in range(len(param_results)):
+    results.append(param_results[:, i, 0])  # mu
+    results.append(error_results[:, i, 0])  # mu error
+    results.append(param_results[:, i, 1])  # sigma
+    results.append(error_results[:, i, 1])  # sigma error
+np.save('sample_fits', results)
+"""
 
+results = np.load('sample_fits.npy', allow_pickle=True)
+n_points = results[0]
+param_results = results[1]
+error_results = results[2]
+print(error_results)
 plt.xscale('log')
-plt.scatter(n_points, param_results[:, 0, 0], label=r'$\mu$ Unbinned')
-plt.scatter(n_points, param_results[:, 1, 0], label=r'$\mu$ Binned 10')
-plt.scatter(n_points, param_results[:, 2, 0], label=r'$\mu$ Binned 50')
-plt.scatter(n_points, param_results[:, 3, 0], label=r'$\mu$ Binned 100')
+plt.scatter(n_points, param_results[:, 0, 0]/error_results[:, 0, 0], label=r'$\mu$ Unbinned')
+plt.scatter(n_points, param_results[:, 1, 0]/error_results[:, 1, 0], label=r'$\mu$ Binned 10')
+plt.scatter(n_points, param_results[:, 2, 0]/error_results[:, 2, 0], label=r'$\mu$ Binned 50')
+plt.scatter(n_points, param_results[:, 3, 0]/error_results[:, 3, 0], label=r'$\mu$ Binned 100')
 plt.legend()
 plt.show()
-
+"""
 """
 improvements:
 scale: (ref-estimate)/error
