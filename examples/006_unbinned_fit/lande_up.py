@@ -1,13 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from kafe2 import HistContainer, HistFit, HistPlot
+from kafe2 import HistContainer, HistFit, HistPlot, XYMultiFit, XYMultiPlot, XYCostFunction_NegLogLikelihood
 
 
 LOW_LIMIT = 2
 HIGH_LIMIT = 19
 
-def events(x, tau=2.2, k=1.0, a_bar=1.0, omega=1.0, delta=1.0, f=0.1):
-    return k*np.exp(-x/tau)+a_bar*np.exp(-x/tau)*np.cos(omega*x+delta)+f
+DATA = None
+
+def events_top(x, tau=2.2, k_top=1.0, a_bar_top=1.0, omega=1.0, delta_top=1.0, f_top=0.1):
+    return k_top*np.exp(-x/tau)+a_bar_top*np.exp(-x/tau)*np.cos(omega*x+delta_top)+f_top
+
+def events_bot(x, tau=2.2, k_bot=1.0, a_bar_bot=1.0, omega=1.0, delta_bot=1.0, f_bot=0.1):
+    return k_bot*np.exp(-x/tau)+a_bar_bot*np.exp(-x/tau)*np.cos(omega*x+delta_bot)+f_bot
 
 def decay(x, tau=2.2, k=1.0, f=0.1):
     return k*np.exp(-x/tau)+f
@@ -28,12 +33,39 @@ def get_data(fname=None):
     return _data
 
 def get_top_data():
-    top_data = get_data()[:, 3]
+    top_data = DATA[:, 3]
     return top_data[top_data > LOW_LIMIT]
 
 def get_bottom_data():
-    bot_data = get_data()[:, 5]
+    bot_data = DATA[:, 5]
     return bot_data[bot_data > LOW_LIMIT]
+
+def get_diff():
+    top_data, bins_top, _ = plt.hist(get_top_data(), bins=100, range=(LOW_LIMIT, HIGH_LIMIT), density=1, alpha=0.5)
+    bot_data, bins_bot, _ = plt.hist(get_bottom_data(), bins=100, range=(LOW_LIMIT, HIGH_LIMIT), density=1, alpha=0.5)
+    # check if bins are equal
+    for top, bot in zip(bins_top, bins_bot):
+        if top != bot:
+            print("Different edges: {}, {}".format(top. bot))
+    data = top_data - bot_data
+    binc = (bins_top[1:]-bins_top[:-1])/2.0 + bins_top[:-1]
+    top_data = np.array(top_data, dtype=float)
+    bot_data = np.array(bot_data, dtype=float)
+    plt.show()
+    plt.gcf().clear()
+    plt.plot(binc, data)
+    plt.show()
+    """
+    fit = XYMultiFit(xy_data=[[binc, top_data], [binc, bot_data]], model_function=[events_top, events_bot])
+                     #cost_function=XYCostFunction_NegLogLikelihood('poisson'))
+    fit.limit_parameter('tau', (2.0, 3))
+    fit.limit_parameter('omega', (1.0, 1.9))
+    fit.do_fit()
+    fit.report()
+    plot = XYMultiPlot(fit)
+    plot.show_fit_info_box()
+    plt.show()
+    """
 
 def fit_simple(data):
     hist_data = HistContainer(n_bins=100, bin_range=(LOW_LIMIT, HIGH_LIMIT), fill_data=data)
@@ -86,4 +118,5 @@ def fit_advanced(data):
 
 
 if __name__ == "__main__":
-    fit_advanced(get_top_data())
+    DATA = get_data()
+    get_diff()
