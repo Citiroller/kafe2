@@ -8,7 +8,7 @@ from scipy.stats import norm
 from multiprocessing import Pool
 
 from kafe2 import UnbinnedFit
-from kafe2 import HistContainer, HistFit
+from kafe2 import HistContainer, HistFit, HistCostFunction_Chi2
 
 
 np.random.seed(1009131719)
@@ -53,6 +53,7 @@ class Fitters:
     def do_hist(self, step):
         hist_cont = HistContainer(n_bins=self.n_bins, bin_range=self.borders, fill_data=self.data[0:step])
         hist_fit = HistFit(hist_cont, model_density_function=pdf, model_density_antiderivative=cdf)
+        #                   cost_function=HistCostFunction_Chi2(errors_to_use=None))
         hist_fit.do_fit()
         params = hist_fit.parameter_values
         errors = hist_fit.parameter_errors
@@ -61,7 +62,7 @@ class Fitters:
     def do_fits(self):
         p = Pool(processes=10)
         _result = [p.map(self.do_unbinned, [i for i in self.steps])]
-        for n in [10, 50, 100]:
+        for n in [3, 6, 10, 50]:
             p = Pool(processes=10)
             self.n_bins = n
             _result.append(p.map(self.do_hist, [i for i in self.steps]))
@@ -72,50 +73,29 @@ if __name__ == '__main__':
     fitters = Fitters(10000, 4, 10000, 50)
     result = fitters.do_fits()
     mu_lim = [-0.25, 0.25]
-    sig_lim = [0.3, 1.1]
-    fig, axs = plt.subplots(nrows=4, ncols=2, sharex=True)
-    ax = axs[0, 0]
-    ax.errorbar(fitters.steps, result[1, :, 0, 0], yerr=result[1, :, 1, 0], fmt='o')
-    ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-    ax.set_ylim(mu_lim[0], mu_lim[1])
-    ax.set_title(r'10 Bins $\mu$')
-    ax = axs[0, 1]
-    ax.errorbar(fitters.steps, result[1, :, 0, 1], yerr=result[1, :, 1, 1], fmt='o')
-    ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-    ax.set_ylim(sig_lim[0], sig_lim[1])
-    ax.set_title(r'10 Bins $\sigma$')
-    ax = axs[1, 0]
-    ax.errorbar(fitters.steps, result[2, :, 0, 0], yerr=result[2, :, 1, 0], fmt='o')
-    ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-    ax.set_ylim(mu_lim[0], mu_lim[1])
-    ax.set_title(r'50 Bins $\mu$')
-    ax = axs[1, 1]
-    ax.errorbar(fitters.steps, result[2, :, 0, 1], yerr=result[2, :, 1, 1], fmt='o')
-    ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-    ax.set_ylim(sig_lim[0], sig_lim[1])
-    ax.set_title(r'50 Bins $\sigma$')
-    ax = axs[2, 0]
-    ax.errorbar(fitters.steps, result[3, :, 0, 0], yerr=result[3, :, 1, 0], fmt='o')
-    ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-    ax.set_ylim(mu_lim[0], mu_lim[1])
-    ax.set_title(r'100 Bins $\mu$')
-    ax = axs[2, 1]
-    ax.errorbar(fitters.steps, result[3, :, 0, 1], yerr=result[3, :, 1, 1], fmt='o')
-    ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-    ax.set_ylim(sig_lim[0], sig_lim[1])
-    ax.set_title(r'100 Bins $\sigma$')
-    ax = axs[3, 0]
-    ax.errorbar(fitters.steps, result[0, :, 0, 0], yerr=result[0, :, 1, 0], fmt='o')
-    ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-    ax.set_ylim(mu_lim[0], mu_lim[1])
-    ax.set_title(r'Unbinned $\mu$')
-    ax = axs[3, 1]
-    ax.errorbar(fitters.steps, result[0, :, 0, 1], yerr=result[0, :, 1, 1], fmt='o')
-    ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-    ax.set_ylim(sig_lim[0], sig_lim[1])
-    ax.set_title(r'Unbinned $\sigma$')
+    sig_lim = [0.2, 1.1]
+    helper_dict = {3: {'index': 1, 'loc': 0, 'title': '3 Bins'}, 6: {'index': 2, 'loc': 1, 'title': '6 Bins'},
+                   10: {'index': 3, 'loc': 2, 'title': '10 Bins'}, 50: {'index': 4, 'loc': 3, 'title': '50 Bins'},
+                   0: {'index': 0, 'loc': 4, 'title': 'Unbinned'}}
+    fig, axs = plt.subplots(nrows=5, ncols=2, sharex=True)
+    fig.set_size_inches(8.26, 11.7)
+    fig.set_dpi(300)
+    for key, params in helper_dict.items():
+        index = params['index']
+        loc = params['loc']
+        title = params['title']
+        ax = axs[loc, 0]
+        ax.errorbar(fitters.steps, result[index, :, 0, 0], yerr=result[index, :, 1, 0], fmt='o')
+        ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
+        ax.set_ylim(mu_lim[0], mu_lim[1])
+        ax.set_title(title+' $\\mu$')
+        ax = axs[loc, 1]
+        ax.errorbar(fitters.steps, result[index, :, 0, 1], yerr=result[index, :, 1, 1], fmt='o')
+        ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
+        ax.set_ylim(sig_lim[0], sig_lim[1])
+        ax.set_title(title+r' $\sigma$')
     plt.xscale('log')
-    plt.show()
+    plt.savefig('out.png')
 
 
 """
