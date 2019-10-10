@@ -24,10 +24,11 @@ def cdf(x, mu=0, sigma=1):
 
 class Fitters:
     def __init__(self, size, low, high, steps):
-        self.data = self.gen_data(size)
+        self.data = self.gen_data(int(size))
         self.steps = self.gen_steps(low, high, steps)
         self.borders = (np.min(self.data), np.max(self.data))
         self.n_bins = None
+        self.minimizer = "iminuit"
 
     @staticmethod
     def gen_data(size=100000):
@@ -44,7 +45,7 @@ class Fitters:
 
     def do_unbinned(self, step):
         data = self.data[0:step]
-        fit = UnbinnedFit(data, model_density_function=pdf)
+        fit = UnbinnedFit(data, model_density_function=pdf, minimizer=self.minimizer)
         fit.do_fit()
         params = fit.parameter_values
         errors = fit.parameter_errors
@@ -52,7 +53,8 @@ class Fitters:
 
     def do_hist(self, step):
         hist_cont = HistContainer(n_bins=self.n_bins, bin_range=self.borders, fill_data=self.data[0:step])
-        hist_fit = HistFit(hist_cont, model_density_function=pdf, model_density_antiderivative=cdf)
+        hist_fit = HistFit(hist_cont, model_density_function=pdf, model_density_antiderivative=cdf,
+                           minimizer=self.minimizer)
         #                   cost_function=HistCostFunction_Chi2(errors_to_use=None))
         hist_fit.do_fit()
         params = hist_fit.parameter_values
@@ -70,10 +72,10 @@ class Fitters:
 
 
 if __name__ == '__main__':
-    fitters = Fitters(10000, 4, 10000, 50)
+    fitters = Fitters(1e4, 4, 1e4, 50)
     result = fitters.do_fits()
-    mu_lim = [-0.25, 0.25]
-    sig_lim = [0.2, 1.1]
+    # mu_lim = [-0.25, 0.25]
+    # sig_lim = [0.2, 1.1]
     helper_dict = {3: {'index': 1, 'loc': 0, 'title': '3 Bins'}, 6: {'index': 2, 'loc': 1, 'title': '6 Bins'},
                    10: {'index': 3, 'loc': 2, 'title': '10 Bins'}, 50: {'index': 4, 'loc': 3, 'title': '50 Bins'},
                    0: {'index': 0, 'loc': 4, 'title': 'Unbinned'}}
@@ -85,17 +87,19 @@ if __name__ == '__main__':
         loc = params['loc']
         title = params['title']
         ax = axs[loc, 0]
-        ax.errorbar(fitters.steps, result[index, :, 0, 0], yerr=result[index, :, 1, 0], fmt='o')
+        # ax.errorbar(fitters.steps, result[index, :, 0, 0], yerr=result[index, :, 1, 0], fmt='o')
+        ax.scatter(fitters.steps, (0-result[index, :, 0, 0])/result[index, :, 1, 0])
         ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-        ax.set_ylim(mu_lim[0], mu_lim[1])
+        # ax.set_ylim(mu_lim[0], mu_lim[1])
         ax.set_title(title+' $\\mu$')
         ax = axs[loc, 1]
-        ax.errorbar(fitters.steps, result[index, :, 0, 1], yerr=result[index, :, 1, 1], fmt='o')
+        # ax.errorbar(fitters.steps, result[index, :, 0, 1], yerr=result[index, :, 1, 1], fmt='o')
+        ax.scatter(fitters.steps, (0 - result[index, :, 0, 1]) / result[index, :, 1, 1])
         ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-        ax.set_ylim(sig_lim[0], sig_lim[1])
+        # ax.set_ylim(sig_lim[0], sig_lim[1])
         ax.set_title(title+r' $\sigma$')
     plt.xscale('log')
-    plt.savefig('out.png')
+    plt.savefig('out1.png')
 
 
 """

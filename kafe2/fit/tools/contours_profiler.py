@@ -381,7 +381,7 @@ class ContoursProfiler(object):
 
         _axes.set_xlabel(_par_formatted_name)
         _axes.set_ylabel(self._cost_function_formatted_name if not self._profile_kwargs['subtract_min']
-                         else '$\Delta$%s' % self._cost_function_formatted_name)
+                         else '$\\Delta($%s$)$' % self._cost_function_formatted_name)
 
         if show_legend:
             _axes.legend(loc='center')

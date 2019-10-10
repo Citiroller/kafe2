@@ -30,8 +30,13 @@ def main():
     fit.do_fit()
     fit.report(asymmetric_parameter_errors=True)
     # create likelihood Plot
+    fig = plt.figure(figsize=(8, 8))
+    ax = plt.gca()
     cpf = ContoursProfiler(fit, profile_subtract_min=True)
-    cpf.plot_profiles_contours_matrix(show_grid_for='all', show_error_span_profiles=True, label_ticks_in_sigma=False)
+    cpf.plot_profile('p', label_ticks_in_sigma=False, target_axes=ax)
+    # cpf.plot_profiles_contours_matrix(show_grid_for='all', show_error_span_profiles=True, label_ticks_in_sigma=False)
+    # plt.subplots_adjust(left=0.5)
+    plt.tight_layout()
     plt.show()  # show the plot
 
 
