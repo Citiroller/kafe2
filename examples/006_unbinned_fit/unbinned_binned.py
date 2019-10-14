@@ -74,8 +74,8 @@ class Fitters:
 if __name__ == '__main__':
     fitters = Fitters(1e4, 4, 1e4, 50)
     result = fitters.do_fits()
-    # mu_lim = [-0.25, 0.25]
-    # sig_lim = [0.2, 1.1]
+    mu_lim = [-0.25, 0.25]
+    sig_lim = [0.2, 1.1]
     helper_dict = {3: {'index': 1, 'loc': 0, 'title': '3 Bins'}, 6: {'index': 2, 'loc': 1, 'title': '6 Bins'},
                    10: {'index': 3, 'loc': 2, 'title': '10 Bins'}, 50: {'index': 4, 'loc': 3, 'title': '50 Bins'},
                    0: {'index': 0, 'loc': 4, 'title': 'Unbinned'}}
@@ -87,19 +87,25 @@ if __name__ == '__main__':
         loc = params['loc']
         title = params['title']
         ax = axs[loc, 0]
-        # ax.errorbar(fitters.steps, result[index, :, 0, 0], yerr=result[index, :, 1, 0], fmt='o')
-        ax.scatter(fitters.steps, (0-result[index, :, 0, 0])/result[index, :, 1, 0])
+        ax.errorbar(fitters.steps, result[index, :, 0, 0], yerr=result[index, :, 1, 0], fmt='o')
+        # ax.scatter(fitters.steps, (0-result[index, :, 0, 0])/result[index, :, 1, 0])
         ax.plot(fitters.steps, np.zeros(len(fitters.steps)), 'r--')
-        # ax.set_ylim(mu_lim[0], mu_lim[1])
+        ax.set_ylim(mu_lim[0], mu_lim[1])
         ax.set_title(title+' $\\mu$')
+        ax.set_ylabel(r'$\mu$ best fit')
+        ax.set_xlabel('Number of Datapoints')
+        ax.label_outer()
         ax = axs[loc, 1]
-        # ax.errorbar(fitters.steps, result[index, :, 0, 1], yerr=result[index, :, 1, 1], fmt='o')
-        ax.scatter(fitters.steps, (0 - result[index, :, 0, 1]) / result[index, :, 1, 1])
+        ax.errorbar(fitters.steps, result[index, :, 0, 1], yerr=result[index, :, 1, 1], fmt='o')
+        # ax.scatter(fitters.steps, (0 - result[index, :, 0, 1]) / result[index, :, 1, 1])
         ax.plot(fitters.steps, np.ones(len(fitters.steps)), 'r--')
-        # ax.set_ylim(sig_lim[0], sig_lim[1])
+        ax.set_ylim(sig_lim[0], sig_lim[1])
         ax.set_title(title+r' $\sigma$')
+        ax.set_ylabel(r'$\sigma$ best fit')
     plt.xscale('log')
-    plt.savefig('out1.png')
+    plt.xlabel('Number of Datapoints')
+    plt.tight_layout()
+    plt.savefig('UnbinnedBinned.png')
 
 
 """
