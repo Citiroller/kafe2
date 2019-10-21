@@ -27,7 +27,7 @@ class MultiFit(object):
     def _init_nexus(self):
         self._nexus = Nexus()
 
-        _nexuses = [_f._get_nexus() for _f in self._fits]
+        _nexuses = [_f._nexus for _f in self._fits]
 
         _cost_nexus_nodes = []
         _cost_nexus_node_pairs = []

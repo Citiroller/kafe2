@@ -101,14 +101,14 @@ def fit_advanced(data):
     #hist_fit.limit_parameter('tau', (2.0, 3))
     #hist_fit.limit_parameter('k', (0.5, 0.8))
     #hist_fit.limit_parameter('f', (0.01, 0.02))
-    hist_fit.fix_parameter('delta', 0)
+    # hist_fit.fix_parameter('delta', 0)
     #hist_fit.limit_parameter('delta', (-0.01*np.pi, 0.01*np.pi))
     #hist_fit.limit_parameter('a_bar', (-0.1, 0.1))
     hist_fit.limit_parameter('omega', (1.0, 1.9))
     # assign latex names for the parameters for nicer display
-    # hist_fit.assign_parameter_latex_names(tau=r'\tau', k='k', f='f', a_bar=r'\bar{{A}}')
+    hist_fit.assign_parameter_latex_names(tau=r'\tau', k='k', f='f', a_bar=r'\bar{{A}}')
     # assign a latex expression for the fit function for nicer display
-    # hist_fit.assign_model_function_latex_expression("{k}e^{{-{x}/{tau}}}+{f}")
+    hist_fit.assign_model_function_latex_expression("{k}e^{{-{x}/{tau}}}+{f}")
     hist_fit.do_fit()
     hist_fit.report()
     hist_plot = HistPlot(hist_fit)
