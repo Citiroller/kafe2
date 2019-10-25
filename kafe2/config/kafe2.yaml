@@ -16,7 +16,7 @@ core:
   fitters:
     default_fitter: "nexus_fitter"
     nexus_fitter:
-      max_calls: 6000
+      max_calls: 20000
 
 
 fit:
