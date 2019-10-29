@@ -17,7 +17,8 @@ def decay_bot(x, tau=2.2, k_bot=1.0, f_bot=0.1):
 
 
 class Lande:
-    def __init__(self, low_limit=2, high_limit=16, gen_data=False, fname="dpFilt_190325-0148.dat"):
+    def __init__(self, low_limit=2, high_limit=16, b=5e-3, gen_data=False, fname="dpFilt_190325-0148.dat"):
+        self.b = b
         self.top_events = None
         self.bot_events = None
         self.hist_top = None
@@ -43,27 +44,24 @@ class Lande:
         self.top_events = np.array(_data[:, 3])
         self.bot_events = np.array(_data[:, 5])
 
-    def _gen_data(self, size, low, high):
-        from scipy.constants import e
-        from scipy.constants import physical_constants
+    def _gen_data(self, size, low, high, pars_top=None, pars_bot=None, rand_seed=42):
+        from scipy.constants import e, physical_constants
         g = 2.0023318418  # lande factor of the myon
         tau = 2.1969811e-6  # mean decay time
-        b = 5e-3  # magnetic field in T
+        b = self.b  # magnetic field in T
         m = physical_constants["muon mass"][0]
         omega = g * e * b / (2 * m)
         print("Expected omega ist {}".format(omega))
         delta = 9.85  # phase delay
-        k_top = 0.1  # amount of decay
-        a_top = 3e-7  # amount of precession
-        f_top = 2.6e-3  # background
-        k_bot = 4e-2
-        a_bot = 3e-3
-        f_bot = 1.5e-3
-        pars_top = {'tau': tau*1e6, 'k_top': k_top, 'a_bar_top': a_top, 'omega': omega*1e-6, 'delta': delta, 'f_top': f_top}
-        pars_bot = {'tau': tau*1e6, 'k_bot': k_bot, 'a_bar_bot': a_bot, 'omega': omega*1e-6, 'delta': delta, 'f_bot': f_bot}
+        if pars_top is None:
+            pars_top = {'tau': tau*1e6, 'k_top': 0.8, 'a_bar_top': 1e-3, 'omega': omega*1e-6, 'delta': delta,
+                        'f_top': 2.6e-3}
+        if pars_bot is None:
+            pars_bot = {'tau': tau*1e6, 'k_bot': 0.7, 'a_bar_bot': 1e-2, 'omega': omega*1e-6, 'delta': delta,
+                        'f_bot': 1.5e-3}
         self.top_events = np.zeros(int(size), dtype=float)
         self.bot_events = np.zeros(int(size / 2), dtype=float)
-        random = np.random.RandomState(42)
+        random = np.random.RandomState(rand_seed)
 
         def gen(arr, fcn, low, high, **pars):
             x = np.linspace(low, high, 100)
@@ -113,6 +111,7 @@ class Lande:
 
     def plot(self):
         _plot = Plot(self.fit_multi, separate_figures=False)
+        _plot.customize(plot_type='data', keyword='markersize', values=[5, 5])
         # _plot = Plot((self.fit_top, self.fit_bot), separate_figures=True)
         _plot.plot()
 
@@ -139,8 +138,8 @@ def compare_limits():
     plt.plot(high_limits, np.sum(cost, axis=1))
     plt.show()
 
-def fit(lande, b=3.6e-3):
-    starting_values = {'omega': 3, 'delta': np.pi, 'a_bar_top': 0.01, 'a_bar_bot': 0.01}
+def fit(lande):
+    starting_values = {'omega': 3, 'delta': np.pi, 'a_bar_top': 1e-4, 'a_bar_bot': 1e-4}
     limits = {'a_bar_top': (1e-20, 1), 'a_bar_bot': (1e-20, 1)}
     lande.do_fit(pre_fit=True, limits=limits, **starting_values)
     print()
@@ -152,18 +151,19 @@ def fit(lande, b=3.6e-3):
     omega = lande.fit_multi.parameter_name_value_dict['omega'] * 1e6
     g_ref = 2.0023318418  # lande factor of the myon
     m = physical_constants["muon mass"][0]
+    b = lande.b
     g = 2 * m * omega / (e * b)  # calculate g-factor with fit result for omega
     print("Ref g: {}\nFit g: {}".format(g_ref, g))
     plt.show()
 
 def data_fit():
     low_limit, high_limit = 2, 13  # best limits according to prefits
-    lande = Lande(low_limit, high_limit)
-    fit(lande, b=3.6e-3)
+    lande = Lande(low_limit, high_limit, b=3.6e-3)
+    fit(lande)
 
 def toy_data_fit():
-    lande = Lande(2, 13, gen_data=True)
-    fit(lande, b=5e-3)
+    lande = Lande(2, 13, gen_data=True, b=5e-3)
+    fit(lande)
 
 
 if __name__ == '__main__':
