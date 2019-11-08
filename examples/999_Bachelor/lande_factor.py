@@ -83,18 +83,20 @@ class Lande:
         _fit_top = HistFit(_hist_top, events_top, cost_function='nllr')
         _fit_bot = HistFit(_hist_bot, events_bot, cost_function='nllr')
         shared_par_dict = {'x': 't', 'tau': r'\tau', 'omega': r'\omega', 'delta': r'\delta'}
-        top_par_names = {'k_top': r'K_0', 'a_bar_top': r'\bar{{A}}_0', 'f_top': 'f_0'}
-        bot_par_names = {'k_bot': r'K_1', 'a_bar_bot': r'\bar{{A}}_1', 'f_bot': 'f_1'}
+        top_par_names = {'k_top': r'K_0', 'a_bar_top': r'\bar{A}_0', 'f_top': 'f_0'}
+        bot_par_names = {'k_bot': r'K_1', 'a_bar_bot': r'\bar{A}_1', 'f_bot': 'f_1'}
         top_par_names.update(shared_par_dict)
         bot_par_names.update(shared_par_dict)
         _fit_top.assign_model_function_latex_name("N_0")
         _fit_top.assign_parameter_latex_names(**top_par_names)
-        _fit_top.assign_model_function_latex_expression(r'{k_top}\cdot\exp{{\left(\frac{{-{x}}}{{{tau}}}\right)}}'
+        _fit_top._model_function._formatter._latex_x_name = '{t}'  # workaround, because it's currently hardcoded
+        _fit_top.assign_model_function_latex_expression(r'{k_top}\cdot\exp{{\left(-\frac{x}{tau}\right)}}'
                                                         r'\left(1+{a_bar_top}\cdot\cos\left({omega}{x}+{delta}\right)\right)'
                                                         r'+{f_top}')
         _fit_bot.assign_model_function_latex_name("N_1")
         _fit_bot.assign_parameter_latex_names(**bot_par_names)
-        _fit_bot.assign_model_function_latex_expression(r'{k_bot}\cdot\exp{{\left(\frac{{-{x}}}{{{tau}}}\right)}}'
+        _fit_bot._model_function._formatter._latex_x_name = '{t}'  # workaround, because it's currently hardcoded
+        _fit_bot.assign_model_function_latex_expression(r'{k_bot}\cdot\exp{{\left(-\frac{x}{tau}\right)}}'
                                                         r'\left(1+{a_bar_bot}\cdot\cos\left({omega}{x}+{delta}\right)\right)'
                                                         r'+{f_bot}')
         self.fit_multi = MultiFit((_fit_top, _fit_bot), minimizer='iminuit')
@@ -119,8 +121,19 @@ class Lande:
 
     def plot(self):
         _plot = Plot(self.fit_multi, separate_figures=False)
-        _plot.customize(plot_type='data', keyword='markersize', values=[5, 5])
+        _data_upper_kw = dict(label='Upper Detector', markersize=3)
+        _data_lower_kw = dict(label='Lower Detector', markersize=3)
+        _model_upper_kw = dict(label='Upper Model')
+        _model_lower_kw = dict(label='Lower Model')
+        _density_upper_kw = dict(label='Upper Model Density')
+        _density_lower_kw = dict(label='Lower Model Density')
+        _plot.set_keywords('data', [_data_upper_kw, _data_lower_kw])
+        _plot.set_keywords('model', [_model_upper_kw, _model_lower_kw])
+        _plot.set_keywords('model_density', [_density_upper_kw, _density_lower_kw])
+        # _plot.customize(plot_type='data', keyword='markersize', values=[5, 5])
         # _plot = Plot((self.fit_top, self.fit_bot), separate_figures=True)
+        for fig in _plot.figures:
+            fig.xlabel = r'$t$ [$\mu$s]'
         _plot.plot()
 
 
