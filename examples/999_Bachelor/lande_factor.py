@@ -135,56 +135,39 @@ class Lande:
         fig.xlabel = r'$t$ [$\mu$s]'
 
 
-def load_data(fname="dpFilt_190325-0148.dat"):
-    _data = np.loadtxt(fname, delimiter=',')
-    print("Data size before strip: {}".format(len(_data)))
-    # remove physically impossible events
-    delete = []
-    for i, event in enumerate(_data):
-        if (event[3] > 0 or event[4] > 0) and (event[5] > 0):
-            delete.append(i)
-    _data = np.delete(_data, delete, 0)
-    print("Data size after strip: {}".format(len(_data)))
-    return np.array([_data[:, 3], _data[:, 5]])
+if __name__ == '__main__':
+    from scipy.constants import e, physical_constants
+    g_ref = 2.0023318418  # lande factor of the myon
+    tau_ref = 2.1969811e-6  # mean decay time
+    b = 5e-3  # magnetic field in T
+    m = physical_constants["muon mass"][0]
+    omega_ref = g_ref * e * b / (2 * m)
+    print("Expected omega ist {}".format(omega_ref))
+    delta = 9.85  # phase delay
+    gen_pars_top = {'tau': tau_ref * 1e6, 'k_top': 0.8, 'a_bar_top': 0.00125, 'omega': omega_ref * 1e-6, 'delta': delta,
+                    'f_top': 2e-2}
+    gen_pars_bot = {'tau': tau_ref * 1e6, 'k_bot': 0.7, 'a_bar_bot': 0.015, 'omega': omega_ref * 1e-6, 'delta': delta,
+                    'f_bot': 2e-2}
+    limits = (2, 13)
 
+    print('Generating Data...')
+    top_gen = DataGenerator(events_top, limits, size=int(1e6), **gen_pars_top)
+    bot_gen = DataGenerator(events_bot, limits, size=int(4e5), **gen_pars_bot)
+    data = np.array([top_gen.gen_data(), bot_gen.gen_data()])
 
-def evaluate(lande, b=5e-3):
+    print('Performing fit...')
+    lande = Lande(data, limits)
     starting_values = {'omega': 3, 'delta': np.pi, 'a_bar_top': 1e-4, 'a_bar_bot': 1e-4}
-    limits = {'a_bar_top': (1e-20, 1), 'a_bar_bot': (1e-20, 1)}
-    lande.do_fit(starting_values=starting_values, par_limits=limits, pre_fit=True)
+    par_limits = {'a_bar_top': (1e-20, 1), 'a_bar_bot': (1e-20, 1)}
+    lande.do_fit(starting_values=starting_values, par_limits=par_limits, pre_fit=True)
     print()
     for _par_name, _par_val, _par_err in zip(lande.fit_multi.parameter_names, lande.fit_multi.parameter_values,
                                              lande.fit_multi.parameter_errors):
         print('%s: %.3E +- %.3E' % (_par_name, _par_val, _par_err))
     lande.plot()
-    from scipy.constants import e, physical_constants
+
     omega = lande.fit_multi.parameter_name_value_dict['omega'] * 1e6
-    g_ref = 2.0023318418  # lande factor of the myon
-    m = physical_constants["muon mass"][0]
     g = 2 * m * omega / (e * b)  # calculate g-factor with fit result for omega
     print("Ref g: {}\nFit g: {}".format(g_ref, g))
+
     plt.show()
-
-
-if __name__ == '__main__':
-    from scipy.constants import e, physical_constants
-    g = 2.0023318418  # lande factor of the myon
-    tau = 2.1969811e-6  # mean decay time
-    b = 5e-3  # magnetic field in T
-    m = physical_constants["muon mass"][0]
-    omega = g * e * b / (2 * m)
-    print("Expected omega ist {}".format(omega))
-    delta = 9.85  # phase delay
-    gen_pars_top = {'tau': tau * 1e6, 'k_top': 0.8, 'a_bar_top': 0.00125, 'omega': omega * 1e-6, 'delta': delta,
-                    'f_top': 2e-2}
-    gen_pars_bot = {'tau': tau * 1e6, 'k_bot': 0.7, 'a_bar_bot': 0.015, 'omega': omega * 1e-6, 'delta': delta,
-                    'f_bot': 2e-2}
-    limits = (2, 13)
-    print('Loading/Generating Data...')
-    # top_gen = DataGenerator(events_top, limits, size=1e6, **gen_pars_top)
-    # bot_gen = DataGenerator(events_bot, limits, size=4e5, **gen_pars_bot)
-    # data = np.array([top_gen.gen_data(), bot_gen.gen_data()])
-    data = load_data()
-    print('Performing fit...')
-    lande = Lande(data, limits)
-    evaluate(lande, b=b)
